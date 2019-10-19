@@ -1,0 +1,3 @@
+import beetlegoose
+
+beetlegoose.start()
