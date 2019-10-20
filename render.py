@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import pygame
 import sync
+import time
 
 # global declares
 NON_WHITE = (255,0,0)
@@ -35,7 +36,7 @@ def draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_
                 (0, height-calib_box_size, calib_box_size, calib_box_size))
 
 class Monster:
-    def __init__(self, path, size, pos, direction):
+    def __init__(self, path, size, pos = None, direction=None):
         self.path = path
         self.size = size
         self.pos = pos
@@ -43,7 +44,7 @@ class Monster:
         self.n_frames = 8
         self.frame_id = 0
         self.frames = []
-        self.active = True
+        self.active = False
         self.__init_frames()
 
     def __init_frames(self):
@@ -66,6 +67,12 @@ class Monster:
             return
         screen.blit(self.frames[self.frame_id], self.pos)
         self.__update_frame_id()
+
+    def activate(self,pos,direction):
+        self.pos = pos
+        self.direction = direction
+        self.active = True
+        self.frame_id = 0 
 
     def kill(self):
         self.active = False
@@ -116,7 +123,7 @@ class Air:
 
 def monster_random_motion(size, pos, direction):
     # determine a random motion
-    speed = 4
+    speed = 2
 
     dx = speed*np.cos(direction)
     dy = speed*np.sin(direction) 
@@ -148,10 +155,13 @@ def pick_inactive(pool):
         if not el.active:
             return el
 
+    return None
+
 def render(queues={}):
-    msg_capture = queues['msg_render_capture']
+    # msg_capture = queues['msg_render_capture']
 
     pygame.init()
+    np.random.seed(int(time.time()))
     screen = pygame.display.set_mode((width, height),pygame.FULLSCREEN)
     background = pygame.image.load("res/images/bg.png")
     background = pygame.transform.scale(background,(width,height))
@@ -165,29 +175,38 @@ def render(queues={}):
     calib_box_size = 20
 
     n_monsters = 4
+    monster_size = (100,100)
     # declare monsters
-    monster_size = (80,80)
-    bat1 = Monster("res/images/08_bat_monster",monster_size,(-100,0), 0.35*np.pi)
-    bat2 = Monster("res/images/08_bat_monster",monster_size,(1,height+100),-0.35*np.pi)
-    pumpkin1 = Monster("res/images/07_flying_pumpkin",monster_size,(width,-100),0.8*np.pi)
-    pumpkin2 = Monster("res/images/07_flying_pumpkin",monster_size,(width+100,height),1.3*np.pi)
-    all_monsters = [bat1, bat2, pumpkin1, pumpkin2] 
+    bats = [Monster("res/images/08_bat_monster", monster_size) for i in range(2)]
+    pumpkins = [Monster("res/images/07_flying_pumpkin", monster_size) for i in range(2)]
+    all_monsters = bats + pumpkins
+    spawn_locations = [((-100,100),0.35*np.pi),
+                        ((300,height+100),-0.35*np.pi),
+                        ((width-300,-100),0.8*np.pi),
+                        ((width+100,height-200),1.3*np.pi)]
 
     #declare air explosion
     airs = [Air("res/images/air_explode", monster_size) for i in range(n_monsters)]
 
     # calibration
-    draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
-    pygame.display.flip()
-    msg_capture.put('anchor_start')
-    pygame.time.delay(100)
-    sync.wait_on(msg_capture, 'anchor_done')
+    # draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
+    # pygame.display.flip()
+    # msg_capture.put('anchor_start')
+    # pygame.time.delay(100)
+    # sync.wait_on(msg_capture, 'anchor_done')
     
     while running:
         screen.fill(0)
 
         screen.blit(background,(0,0))
         draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
+
+        # spawn monsters
+        dead_monster = pick_inactive(all_monsters)
+        if dead_monster:
+            spawn_location = spawn_locations[int(np.random.random()*4)]
+            dead_monster.activate(spawn_location[0], spawn_location[1])
+
         for monster in all_monsters:
             monster.update(monster_random_motion)
             monster.draw(screen)
@@ -200,7 +219,7 @@ def render(queues={}):
 
         # post render procedures
         calib_frame_id = advance_frame_id(calib_frame_id)
-        pygame.time.delay(1000)
+        pygame.time.delay(30)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -212,10 +231,11 @@ def render(queues={}):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pt = pygame.mouse.get_pos()
                 # evaluate this
-                for monster in all_monsters:
+                for monster in all_monsters[::-1]:
                     if monster.is_hit(pt):
                         monster.kill()
                         pick_inactive(airs).activate(monster.pos)
+                        break
 
 if __name__ == '__main__':
     render()
