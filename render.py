@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import pygame
+import sync
 
 # global declares
 NON_WHITE = (255,0,0)
@@ -148,6 +149,8 @@ def pick_inactive(pool):
             return el
 
 def render(queues={}):
+    msg_capture = queues['msg_render_capture']
+
     pygame.init()
     screen = pygame.display.set_mode((width, height),pygame.FULLSCREEN)
     background = pygame.image.load("res/images/bg.png")
@@ -173,6 +176,13 @@ def render(queues={}):
     #declare air explosion
     airs = [Air("res/images/air_explode", monster_size) for i in range(n_monsters)]
 
+    # calibration
+    draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
+    pygame.display.flip()
+    msg_capture.put('anchor_start')
+    pygame.time.delay(100)
+    sync.wait_on(msg_capture, 'anchor_done')
+    
     while running:
         screen.fill(0)
 
@@ -190,7 +200,7 @@ def render(queues={}):
 
         # post render procedures
         calib_frame_id = advance_frame_id(calib_frame_id)
-        pygame.time.delay(100)
+        pygame.time.delay(1000)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
