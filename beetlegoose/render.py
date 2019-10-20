@@ -1,54 +1,64 @@
-#!/usr/bin/env python
-
 import cv2
 import numpy as np
+import pygame
 
 # global declares
-width = 640
-height = 480
-size = (height,width,3)
-def generate_frames(size,non_white,box_size):
-    total_bits = 16
-    frames = []
-    for i in range(total_bits):
-        raw = np.zeros(size)
+NON_WHITE = (64,191,191)
+WHITE = (255,255,255)
+def draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id):
+    pygame.draw.rect(screen, WHITE,
+            (0, 0, calib_box_size, calib_box_size))
+    pygame.draw.rect(screen, WHITE,
+            (width-calib_box_size, 0,
+            calib_box_size, calib_box_size))
+    pygame.draw.rect(screen, WHITE,
+            (width-calib_box_size, height-calib_box_size,
+            calib_box_size, calib_box_size))
+    pygame.draw.rect(screen, WHITE,
+            (0, height-calib_box_size,
+            calib_box_size, calib_box_size))
 
-        raw[:box_size,:box_size] =\
-        raw[-box_size:,:box_size] =\
-        raw[-box_size:,-box_size:] =\
-        raw[:box_size,-box_size:] = non_white
-
-        if (1 & i):
-            raw[:box_size,:box_size,:] = 1
-        if (2 & i):
-            raw[-box_size:,:box_size,:] = 1
-        if (4 & i):
-            raw[-box_size:,-box_size:,:] = 1
-        if (8 & i):
-            raw[:box_size,-box_size:,:] = 1
-
-        scaled = raw*255
-        scaled = scaled.astype(np.uint8)
-        frames.append(scaled)
-    return frames
+    if (1 & calib_frame_id):
+        pygame.draw.rect(screen, NON_WHITE,
+                (0, 0, calib_box_size, calib_box_size))
+    if (2 & calib_frame_id):
+        pygame.draw.rect(screen, NON_WHITE,
+                (width-calib_box_size, 0, calib_box_size, calib_box_size))
+    if (4 & calib_frame_id):
+        pygame.draw.rect(screen, NON_WHITE,
+                (width-calib_box_size, height-calib_box_size,
+                calib_box_size, calib_box_size))
+    if (8 & calib_frame_id):
+        pygame.draw.rect(screen, NON_WHITE,
+                (0, height-calib_box_size, calib_box_size, calib_box_size))
 
 def render():
-    frames = generate_frames(size, np.array([0.75, 0.25, 0.25 ]), 25)
+    pygame.init()
+    width, height = 1024, 768
+    screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
+    running = True
+    screen.fill((0,0,0))
+    pygame.display.flip()
+    calib_frame_id = 0
+    calib_frame_N = 16
+    advance_frame_id = lambda x:(x+1)%calib_frame_N
+    calib_box_size = 20
+    while running:
+        screen.fill(0)
 
-    i = 0
-    N = len(frames)
-    advance_frame_id = lambda x:(x+1)%N
-    capture = cv2.VideoCapture(0)
-    game_name = "Game"
-    cv2.namedWindow( game_name, cv2.WINDOW_NORMAL )
+        draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
 
-    while True:
-        # read frame from camera
-        ret, frame = capture.read()
-        if not ret:
-            Exception( "Could not read from camera" )
+        pygame.display.flip()
 
-        cv2.imshow( game_name, frames[i] )
-        i = advance_frame_id(i)
-        if cv2.waitKey(500) & 0xFF == ord('q'):
-            break
+        # post render procedures
+        calib_frame_id = advance_frame_id(calib_frame_id)
+        pygame.time.delay(100)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit(0)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    exit(0)
+
