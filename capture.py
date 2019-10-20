@@ -3,7 +3,7 @@ from picamera import PiCamera
 import time
 import cv2
 
-def capture():
+def capture(queues={}):
     # initialize the camera and grab a reference to the raw camera capture
     camera = PiCamera()
     camera.resolution = (1024,768)
@@ -29,3 +29,14 @@ def capture():
             # if the `q` key was pressed, break from the loop
             if key == ord("q"):
                 break
+
+def screenshot(queues={}):
+    camera = PiCamera()
+    camera.resolution = (1024,768)
+    time.sleep(10)
+
+    camera.capture('/home/pi/Desktop/img.png')
+    print('Image captured')
+
+if __name__ == '__main__':
+    capture()

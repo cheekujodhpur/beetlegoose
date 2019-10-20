@@ -32,7 +32,7 @@ def draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_
         pygame.draw.rect(screen, NON_WHITE,
                 (0, height-calib_box_size, calib_box_size, calib_box_size))
 
-def render():
+def render(queues={}):
     pygame.init()
     width, height = 1024, 768
     screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
@@ -62,3 +62,5 @@ def render():
                     pygame.quit()
                     exit(0)
 
+if __name__ == '__main__':
+    render()
