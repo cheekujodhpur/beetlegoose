@@ -19,11 +19,11 @@ def is_square(cnt):
     return False
 
 def find_anchors(image):
-    #cv2.imwrite("/home/pi/Desktop/img.png", image)
+    # cv2.imwrite("/home/pi/Desktop/img.png", image)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    #cv2.imwrite("/home/pi/Desktop/gray.png", gray)
+    # cv2.imwrite("/home/pi/Desktop/gray.png", gray)
     thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)[1]
-    #cv2.imwrite("/home/pi/Desktop/thresh.png", thresh)
+    # cv2.imwrite("/home/pi/Desktop/thresh.png", thresh)
     cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = cnts[0] if len(cnts) == 2 else cnts[1]
 
@@ -53,7 +53,7 @@ def capture(queues={}):
     # initialize the camera and grab a reference to the raw camera capture
     camera = PiCamera()
     camera.resolution = (WIDTH,HEIGHT)
-    camera.framerate = 10
+    camera.framerate = 32
     rawCapture = PiRGBArray(camera, size=(WIDTH,HEIGHT))
 
     # allow the camera to warmup
@@ -72,7 +72,17 @@ def capture(queues={}):
         if len(anchors) == 4:
             print("Found all four anchors")
             break
+
+    camera.iso = 200
+    time.sleep(2)
+    camera.shutter_speed = camera.exposure_speed
+    camera.exposure_mode = 'off'
+    g = camera.awb_gains
+    camera.awb_mode = 'off'
+    camera.awb_gains = g
+
     msg_render.put('anchor_done')
+
     anchors = sorted(anchors, cmp=vertex_comp)
     anchors = [anchors[3], anchors[2], anchors[0], anchors[1]]
     anchors_flipped = [(a[1],a[0]) for a in anchors]
@@ -88,13 +98,15 @@ def capture(queues={}):
 
         cropped = cv2.warpPerspective(image, perspectiveT, (HEIGHT,WIDTH))
         cropped = cv2.rotate(cropped, cv2.ROTATE_90_CLOCKWISE)
-        #cv2.imwrite("/home/pi/Desktop/cropped.png", cropped)
+        # cv2.imwrite("/home/pi/Desktop/cropped.png", cropped)
         # clear the stream in preparation for the next frame
         rawCapture.truncate(0)
 
-        bitval = lambda x: 0 if int(x[1])+int(x[0]) > 300 else 1
-        bitseq = [bitval(cropped[v]) for v in [(HEIGHT-1,0), (HEIGHT-1, WIDTH-1), (0, WIDTH-1), (0,0), ]]
-        print(bitseq)
+        bitval = lambda x: 0 if int(x[2])+int(x[1])+int(x[0]) > 400 else 1
+        pixval = [cropped[v] for v in [(HEIGHT-1,0), (HEIGHT-1, WIDTH-1), (0, WIDTH-1), (0,0), ]]
+        framenum = sum([bitval(p)*2**(3-i) for i,p in enumerate(pixval)])
+        # print(pixval)
+        print(framenum)
         # break
 
 def screenshot(queues={}):

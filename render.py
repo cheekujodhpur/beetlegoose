@@ -5,7 +5,7 @@ import sync
 import time
 
 # global declares
-NON_WHITE = (255,0,0)
+NON_WHITE = (0,0,0)
 WHITE = (255,255,255)
 width, height = 1024, 768
 def draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id):
@@ -123,7 +123,7 @@ class Air:
 
 def monster_random_motion(size, pos, direction):
     # determine a random motion
-    speed = 2
+    speed = 8
 
     dx = speed*np.cos(direction)
     dy = speed*np.sin(direction) 
@@ -158,7 +158,7 @@ def pick_inactive(pool):
     return None
 
 def render(queues={}):
-    # msg_capture = queues['msg_render_capture']
+    msg_capture = queues['msg_render_capture']
 
     pygame.init()
     np.random.seed(int(time.time()))
@@ -189,11 +189,11 @@ def render(queues={}):
     airs = [Air("res/images/air_explode", monster_size) for i in range(n_monsters)]
 
     # calibration
-    # draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
-    # pygame.display.flip()
-    # msg_capture.put('anchor_start')
-    # pygame.time.delay(100)
-    # sync.wait_on(msg_capture, 'anchor_done')
+    draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
+    pygame.display.flip()
+    msg_capture.put('anchor_start')
+    pygame.time.delay(100)
+    sync.wait_on(msg_capture, 'anchor_done')
     
     while running:
         screen.fill(0)
@@ -219,7 +219,7 @@ def render(queues={}):
 
         # post render procedures
         calib_frame_id = advance_frame_id(calib_frame_id)
-        pygame.time.delay(30)
+        pygame.time.delay(100)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
