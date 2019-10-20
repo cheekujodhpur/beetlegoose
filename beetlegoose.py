@@ -24,38 +24,39 @@ def calculate_location(queues={}):
             diff = np.abs(captured_img - rendered_img)
             diff = diff.reshape((768,1024,3)).astype(np.uint8)
             gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-            thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)[1]
-            thresh = 255-thresh
+            #thresh = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)[1]
+            # thresh = 255-thresh
 
-
-            blob_params = cv2.SimpleBlobDetector_Params()
+            params = cv2.SimpleBlobDetector_Params()
             params.minThreshold = 100
             params.maxThreshold = 150
 
             params.filterByArea = True
-            params.minArea = 2000
+            params.minArea = 1000
 
             params.filterByCircularity = True
-            params.minCircularity = 0.9
+            params.minCircularity = 0.8
 
-            params.filterByConvexity = True
+            params.filterByConvexity = False
             params.minConvexity = 0.8
 
-            params.filterByIntertia = True
-            params.minIntertiaRatio = 0.8
-            detector = cv2.SimpleBlobDetector(params)
+            params.filterByInertia = False
+            params.minInertiaRatio = 0.8
+            detector = cv2.SimpleBlobDetector_create(params)
 
-            keypoints = detector.detect(im)
+            keypoints = detector.detect(gray)
             for kpt in keypoints:
                 print("[kpt:] ", kpt.pt, kpt.size)
+                locque.put((int(kpt.pt[0]), int(kpt.pt[1])))
+            # top = max(keypoints, key=lambda x:x.size)
 
             #top = max(areas, key=lambda x:x[1])
             #print("[location] ", top)
-            # cv2.imwrite("/home/pi/Desktop/diff%d.png" % itr, diff[1])
-            # itr+=1
+            #cv2.imwrite("/home/pi/Desktop/diff%d.png" % itr, thresh)
+            #itr+=1
             #cv2.imwrite("/home/pi/Desktop/capture.png", captured_img.reshape((768,1024,3)))
             #cv2.imwrite("/home/pi/Desktop/render.png", rendered_img.reshape((768,1024,3)))
-            locque.put((512,330))
+            # :locque.put((512,330))
 
 if __name__ == '__main__':
     queues = {
