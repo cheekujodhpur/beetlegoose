@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 import pygame
+import sync
 
 # global declares
-NON_WHITE = (64,191,191)
+NON_WHITE = (0,0,0)
 WHITE = (255,255,255)
 def draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id):
     pygame.draw.rect(screen, WHITE,
@@ -33,6 +34,8 @@ def draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_
                 (0, height-calib_box_size, calib_box_size, calib_box_size))
 
 def render(queues={}):
+    msg_capture = queues['msg_render_capture']
+
     pygame.init()
     width, height = 1024, 768
     screen = pygame.display.set_mode((width, height), pygame.FULLSCREEN)
@@ -43,6 +46,13 @@ def render(queues={}):
     calib_frame_N = 16
     advance_frame_id = lambda x:(x+1)%calib_frame_N
     calib_box_size = 20
+
+    draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
+    pygame.display.flip()
+    msg_capture.put('anchor_start')
+    pygame.time.delay(1000)
+    sync.wait_on(msg_capture, 'anchor_done')
+    
     while running:
         screen.fill(0)
 
@@ -52,7 +62,7 @@ def render(queues={}):
 
         # post render procedures
         calib_frame_id = advance_frame_id(calib_frame_id)
-        pygame.time.delay(100)
+        pygame.time.delay(1000)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()

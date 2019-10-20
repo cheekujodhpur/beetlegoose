@@ -3,9 +3,11 @@ import sys
 import multiprocessing as mp
 from render import render
 from capture import capture, screenshot
+from time import sleep
 
 if __name__ == '__main__':
     queues = {
+        'msg_render_capture': mp.Queue(),
         'rendered_img': mp.Queue(),
         'captured_img': mp.Queue(),
         'ball_location': mp.Queue(),
@@ -14,8 +16,9 @@ if __name__ == '__main__':
     p_render.start()
     
     # capture()
-    p_capture = mp.Process(target=screenshot, name='capture_loop', args=(queues,))
+    p_capture = mp.Process(target=capture, name='capture_loop', args=(queues,))
     p_capture.start()
-    while True:
-        pass
-    # TODO start game
+
+    sleep(5)
+    p_render.join()
+    p_capture.join()
