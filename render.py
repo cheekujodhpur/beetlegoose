@@ -32,6 +32,8 @@ def draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_
         pygame.draw.rect(screen, NON_WHITE,
                 (0, height-calib_box_size, calib_box_size, calib_box_size))
 
+background = pygame.image.load("res/images/bg.png")
+
 def render(queues={}):
     pygame.init()
     width, height = 1024, 768
@@ -46,6 +48,7 @@ def render(queues={}):
     while running:
         screen.fill(0)
 
+        screen.blit(background,(0,0))
         draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
 
         pygame.display.flip()
