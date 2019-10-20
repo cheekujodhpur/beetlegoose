@@ -25,26 +25,37 @@ def calculate_location(queues={}):
             diff = diff.reshape((768,1024,3)).astype(np.uint8)
             gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
             thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)[1]
-            cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+            thresh = 255-thresh
 
-            areas = []
-            for c in cnts:
-                M = cv2.moments(c)
-                if M['m00'] == 0:
-                    continue
-                cx = int(M['m10']/M['m00'])
-                cy = int(M['m01']/M['m00'])
-                # print("Found contour at %dx%d" % (cx,cy))
-                areas.append(((cx,cy), cv2.contourArea(c)))
 
-            top = max(areas, key=lambda x:x[1])
-            print("[location] ", top)
+            blob_params = cv2.SimpleBlobDetector_Params()
+            params.minThreshold = 100
+            params.maxThreshold = 150
+
+            params.filterByArea = True
+            params.minArea = 2000
+
+            params.filterByCircularity = True
+            params.minCircularity = 0.9
+
+            params.filterByConvexity = True
+            params.minConvexity = 0.8
+
+            params.filterByIntertia = True
+            params.minIntertiaRatio = 0.8
+            detector = cv2.SimpleBlobDetector(params)
+
+            keypoints = detector.detect(im)
+            for kpt in keypoints:
+                print("[kpt:] ", kpt.pt, kpt.size)
+
+            #top = max(areas, key=lambda x:x[1])
+            #print("[location] ", top)
             # cv2.imwrite("/home/pi/Desktop/diff%d.png" % itr, diff[1])
             # itr+=1
             #cv2.imwrite("/home/pi/Desktop/capture.png", captured_img.reshape((768,1024,3)))
             #cv2.imwrite("/home/pi/Desktop/render.png", rendered_img.reshape((768,1024,3)))
-            locque.put(top[0])
+            locque.put((512,330))
 
 if __name__ == '__main__':
     queues = {
