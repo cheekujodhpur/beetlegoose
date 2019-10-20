@@ -111,8 +111,10 @@ def capture(queues={}):
         print(framenum)
 
         with capimg.get_lock():
-            capimg = cropped
-            capqueue.put('image_captured')
+            captured_img = np.frombuffer(capimg.get_obj())
+            captured_img[:] = cropped.flatten()
+            capque.put('image_captured')
+            capque.put(str(framenum))
 
         # break
 

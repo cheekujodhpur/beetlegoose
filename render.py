@@ -160,6 +160,7 @@ def pick_inactive(pool):
 def render(queues={}):
     msg_capture = queues['msg_render_capture']
     rendered_images = queues['rendered_imgs']
+    locque = queues['msg_location_render']
 
     pygame.init()
     np.random.seed(int(time.time()))
@@ -202,6 +203,7 @@ def render(queues={}):
         screen.blit(background,(0,0))
         draw_calib_rects(pygame, screen, calib_box_size, width, height, calib_frame_id)
 
+
         # spawn monsters
         dead_monster = pick_inactive(all_monsters)
         if dead_monster:
@@ -215,13 +217,30 @@ def render(queues={}):
         for air in airs:
             air.update()
             air.draw(screen)
+            
+        if not locque.empty():
+            loc = locque.get()
+            print("[render] ", loc)
+            pygame.draw.circle(screen, (255,0,0), loc, 20)
+            for monster in all_monsters[::-1]:
+                if monster.is_hit(loc):
+                    monster.kill()
+                    pick_inactive(airs).activate(monster.pos)
+                    break
 
         pygame.display.flip()
-        rendered_images[calib_frame_id] = pygame.surfarray.array3d(screen)
+        with rendered_images[calib_frame_id].get_lock():
+            rendered_img = np.frombuffer(rendered_images[calib_frame_id].get_obj())
+            renarray = pygame.surfarray.array3d(screen)
+            print(renarray.shape)
+            renarray = np.swapaxes(renarray, 0, 1)
+            renarray = cv2.cvtColor(renarray, cv2.COLOR_BGR2RGB)
+            rendered_img[:] = renarray.flatten()
 
         # post render procedures
         calib_frame_id = advance_frame_id(calib_frame_id)
         pygame.time.delay(100)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
