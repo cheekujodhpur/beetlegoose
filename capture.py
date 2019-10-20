@@ -50,6 +50,8 @@ def vertex_comp(a, b):
 
 def capture(queues={}):
     msg_render = queues['msg_render_capture']
+    capimg = queues['captured_img']
+    capque = queues['msg_capture_location']
     # initialize the camera and grab a reference to the raw camera capture
     camera = PiCamera()
     camera.resolution = (WIDTH,HEIGHT)
@@ -107,6 +109,11 @@ def capture(queues={}):
         framenum = sum([bitval(p)*2**(3-i) for i,p in enumerate(pixval)])
         # print(pixval)
         print(framenum)
+
+        with capimg.get_lock():
+            capimg = cropped
+            capqueue.put('image_captured')
+
         # break
 
 def screenshot(queues={}):

@@ -159,6 +159,7 @@ def pick_inactive(pool):
 
 def render(queues={}):
     msg_capture = queues['msg_render_capture']
+    rendered_images = queues['rendered_imgs']
 
     pygame.init()
     np.random.seed(int(time.time()))
@@ -216,6 +217,7 @@ def render(queues={}):
             air.draw(screen)
 
         pygame.display.flip()
+        rendered_images[calib_frame_id] = pygame.surfarray.array3d(screen)
 
         # post render procedures
         calib_frame_id = advance_frame_id(calib_frame_id)
