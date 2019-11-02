@@ -7,6 +7,7 @@ from time import sleep
 import ctypes
 import sync
 
+
 def calculate_location(queues={}):
     capimg = queues['captured_img']
     rendimg = queues['rendered_imgs']
@@ -22,7 +23,7 @@ def calculate_location(queues={}):
             captured_img = np.frombuffer(capimg.get_obj())
             rendered_img = np.frombuffer(rendimg[framenum].get_obj())
             diff = np.abs(captured_img - rendered_img)
-            diff = diff.reshape((768,1024,3)).astype(np.uint8)
+            diff = diff.reshape((768, 1024, 3)).astype(np.uint8)
             gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
             #thresh = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)[1]
             # thresh = 255-thresh
@@ -53,27 +54,37 @@ def calculate_location(queues={}):
             #top = max(areas, key=lambda x:x[1])
             #print("[location] ", top)
             #cv2.imwrite("/home/pi/Desktop/diff%d.png" % itr, thresh)
-            #itr+=1
+            # itr+=1
             #cv2.imwrite("/home/pi/Desktop/capture.png", captured_img.reshape((768,1024,3)))
             #cv2.imwrite("/home/pi/Desktop/render.png", rendered_img.reshape((768,1024,3)))
             # :locque.put((512,330))
+
 
 if __name__ == '__main__':
     queues = {
         'msg_render_capture': mp.Queue(),
         'msg_capture_location': mp.Queue(),
         'msg_location_render': mp.Queue(),
-        'captured_img': mp.Array(ctypes.c_double, 1024*768*3),
-        'rendered_imgs': [mp.Array(ctypes.c_double, 1024*768*3) for i in range(16)]
-    }
+        'captured_img': mp.Array(
+            ctypes.c_double,
+            1024 * 768 * 3),
+        'rendered_imgs': [
+            mp.Array(
+                ctypes.c_double,
+                1024 * 768 * 3) for i in range(16)]}
     p_render = mp.Process(target=render, name='render_loop', args=(queues,))
     p_render.start()
-    
+
     # capture()
     p_capture = mp.Process(target=capture, name='capture_loop', args=(queues,))
     p_capture.start()
 
-    p_location = mp.Process(target=calculate_location, name='location_loop', args=(queues,))
+    p_location = mp.Process(
+        target=calculate_location,
+        name='location_loop',
+        args=(
+            queues,
+        ))
     p_location.start()
 
     sleep(5)
